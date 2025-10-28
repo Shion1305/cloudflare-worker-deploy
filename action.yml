@@ -7,8 +7,9 @@ inputs:
     description: "Name of Cloudflare Worker"
     required: true
   wrangler_template:
-    description: "Path to wrangler.template.toml in the repo"
-    required: true
+    description: "Path to wrangler.template.toml in the repo (optional, uses default if not provided)"
+    required: false
+    default: ""
   cloudflare_api_token:
     description: "Cloudflare API token with Workers:Edit"
     required: true
@@ -16,6 +17,14 @@ inputs:
     description: "Cloudflare Account ID"
     required: true
   # Optional
+  main_path:
+    description: "Path to the main entry point file"
+    required: false
+    default: ".output/server/index.mjs"
+  assets_dir:
+    description: "Path to the assets directory"
+    required: false
+    default: ".output/public"
   compat_date:
     description: "Cloudflare Workers compatibility_date"
     required: false
@@ -30,18 +39,34 @@ runs:
     - name: Render wrangler.toml from template
       shell: bash
       run: |
-        echo "Saving wrangler.toml from template..."
-        cat <<EOF > wrangler.toml
+        echo "Rendering wrangler.toml from template..."
+        
+        if [ -n "${{ inputs.wrangler_template }}" ] && [ -f "${{ inputs.wrangler_template }}" ]; then
+          # Use custom template
+          echo "Using custom template: ${{ inputs.wrangler_template }}"
+          sed -e "s|{{WORKER_NAME}}|${{ inputs.worker_name }}|g" \
+              -e "s|{{ACCOUNT_ID}}|${{ inputs.account_id }}|g" \
+              -e "s|{{COMPAT_DATE}}|${{ inputs.compat_date }}|g" \
+              -e "s|{{MAIN_PATH}}|${{ inputs.main_path }}|g" \
+              -e "s|{{ASSETS_DIR}}|${{ inputs.assets_dir }}|g" \
+              "${{ inputs.wrangler_template }}" > wrangler.toml
+        else
+          # Use default embedded template
+          echo "Using default template"
+          cat <<EOF > wrangler.toml
         name = "${{ inputs.worker_name }}"
         account_id = "${{ inputs.account_id }}"
-        main = ".output/server/index.mjs"
+        main = "${{ inputs.main_path }}"
         compatibility_date = "${{ inputs.compat_date }}"
         compatibility_flags = ["nodejs_compat"]
-
+        
         [assets]
-        directory = ".output/public"
+        directory = "${{ inputs.assets_dir }}"
         binding = "ASSETS"
         EOF
+        fi
+        
+        echo "wrangler.toml generated successfully"
     - name: Show wrangler.toml
       if: ${{ inputs.print_toml == 'true' }}
       shell: bash
