@@ -60,9 +60,8 @@ runs:
         compatibility_date = "${{ inputs.compat_date }}"
         compatibility_flags = ["nodejs_compat"]
         
-        [assets]
-        directory = "${{ inputs.assets_dir }}"
-        binding = "ASSETS"
+        [site]
+        bucket = "${{ inputs.assets_dir }}"
         EOF
         fi
         

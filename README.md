@@ -33,9 +33,8 @@ main = ".output/server/index.mjs"
 compatibility_date = "2025-09-28"
 compatibility_flags = ["nodejs_compat"]
 
-[assets]
-directory = ".output/public"
-binding = "ASSETS"
+[site]
+bucket = ".output/public"
 ```
 
 ### Custom Template Usage
