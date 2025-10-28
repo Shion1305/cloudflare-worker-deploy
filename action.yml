@@ -1,0 +1,56 @@
+name: "Cloudflare Worker Deploy"
+description: "Auto Compose wrangler.toml and Deploy Cloudflare Worker"
+author: "Shion1305"
+inputs:
+  # Required
+  worker_name:
+    description: "Name of Cloudflare Worker"
+    required: true
+  wrangler_template:
+    description: "Path to wrangler.template.toml in the repo"
+    required: true
+  cloudflare_api_token:
+    description: "Cloudflare API token with Workers:Edit"
+    required: true
+  account_id:
+    description: "Cloudflare Account ID"
+    required: true
+  # Optional
+  compat_date:
+    description: "Cloudflare Workers compatibility_date"
+    required: false
+    default: "2025-09-28"
+  print_toml:
+    description: "Print rendered wrangler.toml to logs"
+    required: false
+    default: "true"
+runs:
+  using: "composite"
+  steps:
+    - name: Render wrangler.toml from template
+      shell: bash
+      run: |
+        echo "Saving wrangler.toml from template..."
+        cat <<EOF > wrangler.toml
+        name = "${{ inputs.worker_name }}"
+        account_id = "${{ inputs.account_id }}"
+        main = ".output/server/index.mjs"
+        compatibility_date = "${{ inputs.compat_date }}"
+        compatibility_flags = ["nodejs_compat"]
+
+        [assets]
+        directory = ".output/public"
+        binding = "ASSETS"
+        EOF
+    - name: Show wrangler.toml
+      if: ${{ inputs.print_toml == 'true' }}
+      shell: bash
+      run: |
+        echo "----- wrangler.toml -----"
+        cat wrangler.toml
+        echo "-------------------------"
+    - name: Deploy
+      uses: cloudflare/wrangler-action@v3
+      with:
+        apiToken: ${{ inputs.cloudflare_api_token }}
+
